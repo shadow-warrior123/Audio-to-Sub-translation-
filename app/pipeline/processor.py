@@ -8,6 +8,7 @@ from typing import Callable
 from app.core.config import Settings
 from app.pipeline.audio import extract_audio
 from app.pipeline.models import PipelineOutputs
+from app.pipeline.nvidia_nim import transcribe_with_nvidia_nim
 from app.pipeline.refine import refine_segments
 from app.pipeline.render import burn_subtitles
 from app.pipeline.srt import write_srt
@@ -49,14 +50,24 @@ def process_video(
         report(5, "extracting_audio")
         extract_audio(video_path, audio_path, settings)
 
-        report(20, "transcribing_japanese")
-        segments = transcribe_japanese(
-            audio_path,
-            settings,
-            progress=progress,
-            progress_start=20,
-            progress_end=45,
-        )
+        if settings.speech_backend == "nvidia_nim_whisper_large_v3_translate":
+            report(20, "nvidia_nim_translating_audio_to_english")
+            segments = transcribe_with_nvidia_nim(audio_path, settings, task="translate")
+            already_english = True
+        elif settings.speech_backend == "nvidia_nim_whisper_large_v3_transcribe":
+            report(20, "nvidia_nim_transcribing_japanese")
+            segments = transcribe_with_nvidia_nim(audio_path, settings, task="transcribe")
+            already_english = False
+        else:
+            report(20, "transcribing_japanese")
+            segments = transcribe_japanese(
+                audio_path,
+                settings,
+                progress=progress,
+                progress_start=20,
+                progress_end=45,
+            )
+            already_english = False
 
         report(45, "refining_segments")
         refined = refine_segments(
@@ -65,9 +76,13 @@ def process_video(
             max_duration=settings.max_segment_duration,
         )
 
-        report(55, "translating_to_english")
-        active_translator = translator or HuggingFaceTranslator(settings)
-        translated = translate_segments(refined, active_translator)
+        if already_english:
+            report(55, "using_nvidia_english_translation")
+            translated = refined
+        else:
+            report(55, "translating_to_english")
+            active_translator = translator or HuggingFaceTranslator(settings)
+            translated = translate_segments(refined, active_translator)
 
         report(70, "optimizing_subtitle_timing")
         timed = optimize_subtitle_timing(

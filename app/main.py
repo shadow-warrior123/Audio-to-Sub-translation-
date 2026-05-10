@@ -8,7 +8,13 @@ from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadF
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.core.config import TRANSLATION_MODEL_OPTIONS, WHISPER_MODEL_OPTIONS, Settings, settings
+from app.core.config import (
+    SPEECH_BACKEND_OPTIONS,
+    TRANSLATION_MODEL_OPTIONS,
+    WHISPER_MODEL_OPTIONS,
+    Settings,
+    settings,
+)
 from app.core.logging import configure_logging
 from app.jobs.runner import new_job_id, run_job
 from app.jobs.store import JobStore
@@ -36,12 +42,15 @@ def health() -> dict[str, object]:
     return {
         "status": "ok",
         "ffmpeg": ffmpeg_available(settings),
+        "speech_backend": settings.speech_backend,
         "whisper_model_size": settings.whisper_model_size,
         "whisper_device": settings.whisper_device,
         "whisper_compute_type": settings.whisper_compute_type,
+        "nvidia_nim_configured": bool(settings.nvidia_api_key),
         "translation_model": settings.translation_model,
         "translation_device": settings.translation_device,
         "model_options": {
+            "speech_backend": list(SPEECH_BACKEND_OPTIONS),
             "whisper": list(WHISPER_MODEL_OPTIONS),
             "translation": list(TRANSLATION_MODEL_OPTIONS),
         },
@@ -52,15 +61,20 @@ def health() -> dict[str, object]:
 async def create_job(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    speech_backend: str = Form(default=settings.speech_backend),
     whisper_model_size: str = Form(default=settings.whisper_model_size),
     translation_model: str = Form(default=settings.translation_model),
 ) -> dict[str, object]:
-    job_settings = _settings_for_job(whisper_model_size, translation_model)
+    job_settings = _settings_for_job(speech_backend, whisper_model_size, translation_model)
     job_id, saved_path = await _save_upload(file)
     record = store.create(job_id, str(saved_path))
     record = store.update(
         job_id,
-        step=f"queued whisper={job_settings.whisper_model_size} translation={job_settings.translation_model}",
+        step=(
+            f"queued speech={job_settings.speech_backend} "
+            f"whisper={job_settings.whisper_model_size} "
+            f"translation={job_settings.translation_model}"
+        ),
     )
     background_tasks.add_task(run_job, job_id, saved_path, store, job_settings)
     return record.to_dict()
@@ -70,17 +84,22 @@ async def create_job(
 async def create_batch_jobs(
     background_tasks: BackgroundTasks,
     files: list[UploadFile] = File(...),
+    speech_backend: str = Form(default=settings.speech_backend),
     whisper_model_size: str = Form(default=settings.whisper_model_size),
     translation_model: str = Form(default=settings.translation_model),
 ) -> dict[str, object]:
     jobs = []
-    job_settings = _settings_for_job(whisper_model_size, translation_model)
+    job_settings = _settings_for_job(speech_backend, whisper_model_size, translation_model)
     for file in files:
         job_id, saved_path = await _save_upload(file)
         record = store.create(job_id, str(saved_path))
         store.update(
             job_id,
-            step=f"queued whisper={job_settings.whisper_model_size} translation={job_settings.translation_model}",
+            step=(
+                f"queued speech={job_settings.speech_backend} "
+                f"whisper={job_settings.whisper_model_size} "
+                f"translation={job_settings.translation_model}"
+            ),
         )
         background_tasks.add_task(run_job, job_id, saved_path, store, job_settings)
         jobs.append(record.to_dict())
@@ -154,7 +173,12 @@ def _file_response(path_value: str, media_type: str) -> FileResponse:
     return FileResponse(path, media_type=media_type, filename=path.name)
 
 
-def _settings_for_job(whisper_model_size: str, translation_model: str) -> Settings:
+def _settings_for_job(speech_backend: str, whisper_model_size: str, translation_model: str) -> Settings:
+    if speech_backend not in SPEECH_BACKEND_OPTIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported speech backend. Choose one of: {', '.join(SPEECH_BACKEND_OPTIONS)}",
+        )
     if whisper_model_size not in WHISPER_MODEL_OPTIONS:
         raise HTTPException(
             status_code=400,
@@ -167,6 +191,7 @@ def _settings_for_job(whisper_model_size: str, translation_model: str) -> Settin
         )
     return replace(
         settings,
+        speech_backend=speech_backend,
         whisper_model_size=whisper_model_size,
         translation_model=translation_model,
     )

@@ -63,6 +63,18 @@ The desktop app starts the local FastAPI backend and opens a native window for u
 
 The UI lets you choose the Whisper transcription model per video (`tiny` through `large-v3`) and the Japanese-to-English translation model before starting a job.
 
+To use NVIDIA NIM Whisper Large v3 options, set your API key before launching:
+
+```powershell
+$env:NVIDIA_API_KEY="your-nvidia-api-key"
+python desktop_app.py
+```
+
+NVIDIA modes available in the UI:
+
+- `nvidia_nim_whisper_large_v3_transcribe`: NVIDIA transcribes Japanese, then the selected text translation model translates to English.
+- `nvidia_nim_whisper_large_v3_translate`: NVIDIA translates speech directly to English and the app keeps subtitle timing from returned word timestamps.
+
 ## API
 
 - `GET /health`

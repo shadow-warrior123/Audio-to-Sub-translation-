@@ -27,6 +27,7 @@ def test_health_route_reports_runtime():
     payload = response.json()
     assert payload["status"] == "ok"
     assert "translation_model" in payload
+    assert "nvidia_nim_whisper_large_v3_translate" in payload["model_options"]["speech_backend"]
     assert "large-v3" in payload["model_options"]["whisper"]
     assert "staka/fugumt-ja-en" in payload["model_options"]["translation"]
 
@@ -34,7 +35,11 @@ def test_health_route_reports_runtime():
 def test_create_job_rejects_unknown_model():
     response = client.post(
         "/jobs",
-        data={"whisper_model_size": "not-real", "translation_model": "Helsinki-NLP/opus-mt-ja-en"},
+        data={
+            "speech_backend": "local_faster_whisper",
+            "whisper_model_size": "not-real",
+            "translation_model": "Helsinki-NLP/opus-mt-ja-en",
+        },
         files={"file": ("sample.mp4", b"not video", "video/mp4")},
     )
 

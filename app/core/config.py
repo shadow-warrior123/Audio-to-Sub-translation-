@@ -21,6 +21,12 @@ TRANSLATION_MODEL_OPTIONS: tuple[str, ...] = (
     "Mitsua/elan-mt-bt-ja-en",
 )
 
+SPEECH_BACKEND_OPTIONS: tuple[str, ...] = (
+    "local_faster_whisper",
+    "nvidia_nim_whisper_large_v3_transcribe",
+    "nvidia_nim_whisper_large_v3_translate",
+)
+
 
 def _bool_env(name: str, default: bool) -> bool:
     value = os.getenv(name)
@@ -38,8 +44,17 @@ class Settings:
     database_path: Path = Path(os.getenv("DATABASE_PATH", "data/jobs.sqlite3"))
 
     whisper_model_size: str = os.getenv("WHISPER_MODEL_SIZE", "small")
+    speech_backend: str = os.getenv("SPEECH_BACKEND", "local_faster_whisper")
     whisper_device: str = os.getenv("WHISPER_DEVICE", "auto")
     whisper_compute_type: str = os.getenv("WHISPER_COMPUTE_TYPE", "auto")
+
+    nvidia_api_key: str | None = os.getenv("NVIDIA_API_KEY")
+    nvidia_nim_server: str = os.getenv("NVIDIA_NIM_SERVER", "grpc.nvcf.nvidia.com:443")
+    nvidia_nim_function_id: str = os.getenv(
+        "NVIDIA_NIM_FUNCTION_ID",
+        "b702f636-f60c-4a3d-a6f4-f3568c13bd7d",
+    )
+    nvidia_nim_language_code: str = os.getenv("NVIDIA_NIM_LANGUAGE_CODE", "ja")
 
     translation_model: str = os.getenv("TRANSLATION_MODEL", "Helsinki-NLP/opus-mt-ja-en")
     translation_device: str = os.getenv("TRANSLATION_DEVICE", "cpu")

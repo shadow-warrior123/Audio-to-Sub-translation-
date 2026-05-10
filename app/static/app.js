@@ -11,6 +11,7 @@ const els = {
   videoInput: document.querySelector("#videoInput"),
   fileTitle: document.querySelector("#fileTitle"),
   fileMeta: document.querySelector("#fileMeta"),
+  speechBackend: document.querySelector("#speechBackend"),
   whisperModel: document.querySelector("#whisperModel"),
   translationModel: document.querySelector("#translationModel"),
   processButton: document.querySelector("#processButton"),
@@ -44,8 +45,10 @@ async function loadHealth() {
     els.healthBadge.classList.toggle("ready", Boolean(health.ffmpeg));
     els.healthDetails.innerHTML = `
       <div><dt>FFmpeg</dt><dd>${health.ffmpeg ? "Available" : "Missing"}</dd></div>
+      <div><dt>Speech</dt><dd>${escapeHtml(health.speech_backend)}</dd></div>
       <div><dt>Whisper</dt><dd>${escapeHtml(health.whisper_model_size)}</dd></div>
       <div><dt>Translation</dt><dd>${escapeHtml(health.translation_model)}</dd></div>
+      <div><dt>NVIDIA NIM</dt><dd>${health.nvidia_nim_configured ? "Configured" : "Set NVIDIA_API_KEY to use"}</dd></div>
       <div><dt>Device</dt><dd>ASR ${escapeHtml(health.whisper_device)} / Translation ${escapeHtml(health.translation_device)}</dd></div>
     `;
     populateModelSelects(health);
@@ -105,6 +108,7 @@ async function startJob() {
 
   const body = new FormData();
   body.append("file", state.selectedFile);
+  body.append("speech_backend", els.speechBackend.value);
   body.append("whisper_model_size", els.whisperModel.value);
   body.append("translation_model", els.translationModel.value);
 
@@ -166,6 +170,7 @@ function updateStatus(job) {
 }
 
 function populateModelSelects(health) {
+  fillSelect(els.speechBackend, health.model_options?.speech_backend || [], health.speech_backend);
   fillSelect(els.whisperModel, health.model_options?.whisper || [], health.whisper_model_size);
   fillSelect(els.translationModel, health.model_options?.translation || [], health.translation_model);
 }
