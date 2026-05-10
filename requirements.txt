@@ -1,0 +1,13 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+faster-whisper==1.1.1
+transformers==4.48.0
+sentencepiece==0.2.0
+sacremoses==0.1.1
+torch>=2.2.0
+pytest==8.3.4
+httpx==0.28.1
+imageio-ffmpeg==0.6.0
+pywebview==5.4
+nvidia-riva-client==2.25.1.post2

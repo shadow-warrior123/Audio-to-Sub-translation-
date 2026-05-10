@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anime Subtitle Studio</title>
+    <link rel="stylesheet" href="/app/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="topbar">
+        <div>
+          <h1>Anime Subtitle Studio</h1>
+          <p>Japanese video in, English hard-subbed video out.</p>
+        </div>
+        <div id="healthBadge" class="badge">Checking backend...</div>
+      </section>
+
+      <section class="layout">
+        <div class="workspace">
+          <label id="dropZone" class="drop-zone" for="videoInput">
+            <input id="videoInput" type="file" accept=".mp4,.mkv,video/mp4,video/x-matroska" />
+            <span class="drop-icon">+</span>
+            <strong id="fileTitle">Choose or drop a video</strong>
+            <span id="fileMeta">MP4 or MKV, processed locally through the backend.</span>
+          </label>
+
+          <div class="model-grid">
+            <label>
+              <span>Speech backend</span>
+              <select id="speechBackend"></select>
+            </label>
+            <label>
+              <span>Whisper model</span>
+              <select id="whisperModel"></select>
+            </label>
+            <label>
+              <span>Japanese to English model</span>
+              <select id="translationModel"></select>
+            </label>
+          </div>
+
+          <div class="actions">
+            <button id="processButton" disabled>Process Video</button>
+            <button id="resetButton" class="secondary" type="button">Reset</button>
+          </div>
+
+          <div id="statusPanel" class="status-panel hidden">
+            <div class="status-head">
+              <span id="statusLabel">Queued</span>
+              <span id="progressLabel">0%</span>
+            </div>
+            <div class="progress-track">
+              <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <p id="stepText">Waiting to start.</p>
+            <pre id="logBox"></pre>
+          </div>
+
+          <div id="errorPanel" class="error-panel hidden"></div>
+        </div>
+
+        <aside class="side">
+          <h2>Runtime</h2>
+          <dl id="healthDetails">
+            <div><dt>FFmpeg</dt><dd>...</dd></div>
+            <div><dt>Whisper</dt><dd>...</dd></div>
+            <div><dt>Translation</dt><dd>...</dd></div>
+            <div><dt>Device</dt><dd>...</dd></div>
+          </dl>
+        </aside>
+      </section>
+
+      <section id="resultPanel" class="result-panel hidden">
+        <div class="result-head">
+          <div>
+            <h2>Finished Video</h2>
+            <p>Your hard-subbed output is ready.</p>
+          </div>
+          <div class="download-actions">
+            <a id="videoDownload" class="button-link" href="#">Video</a>
+            <a id="subtitleDownload" class="button-link secondary-link" href="#">SRT</a>
+          </div>
+        </div>
+        <video id="videoPreview" controls preload="metadata"></video>
+      </section>
+    </main>
+
+    <script src="/app/app.js"></script>
+  </body>
+</html>
